@@ -67,6 +67,7 @@ app.get("/question2", (req, res) => {
         res.render("all_entry", { leaderboard: results, message: null });
     });
 });
+
 app.get("/user_rank", (req, res) => {
     const uid = req.query.uid;
 
@@ -78,8 +79,12 @@ app.get("/user_rank", (req, res) => {
     const query = `
         SELECT RANK
         FROM (
-            SELECT UID, RANK() OVER (ORDER BY Score DESC) AS RANK
-            FROM leaderboard
+            SELECT UID, Score,
+            @curRank := IF(@prevScore = Score, @curRank, @rowCount) AS RANK,
+            @rowCount := @rowCount + 1,
+            @prevScore := Score
+            FROM leaderboard, (SELECT @curRank := 0, @prevScore := null, @rowCount := 1) AS vars
+            ORDER BY Score DESC
         ) AS ranked_users
         WHERE UID = ?;
     `;
@@ -87,7 +92,7 @@ app.get("/user_rank", (req, res) => {
     db.query(query, [uid], (err, results) => {
         if (err) {
             console.error("Error executing query:", err);
-            res.status(500).send("Internal Server Error");
+            res.status(500).send(`Internal Server Error: ${err.message}`);
             return;
         }
 
@@ -99,6 +104,7 @@ app.get("/user_rank", (req, res) => {
         }
     });
 });
+
 // Route to fetch and render all entries
 app.get("/all_entry", (req, res) => {
     const query = `

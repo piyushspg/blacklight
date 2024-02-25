@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/piyushspg/black_light#readme",
   "dependencies": {
+    "express": "^4.17.1",
     "dotenv": "^16.4.5"
   }
 }
